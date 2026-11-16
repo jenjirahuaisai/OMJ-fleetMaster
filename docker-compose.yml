@@ -1,0 +1,61 @@
+# FleetMaster: `docker compose up --build` starts everything, no extra configuration needed.
+# All passwords below are development-only test values (allowed by the assignment).
+# Reset the database (re-runs database/init/*.sql): `docker compose down -v`
+
+name: fleetmaster
+
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root_dev_password
+      MYSQL_DATABASE: fleetmaster
+      # No MYSQL_USER on purpose: the image would give that user ALL rights on the database.
+      # The API account (api_user_account) is created with limited grants in 02_roles_and_users.sql.
+      TZ: Europe/Amsterdam
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      # Binary logs for point-in-time recovery (see docs/backup-recovery.md)
+      - --log-bin=mysql-bin
+      - --binlog-expire-logs-seconds=604800
+    ports:
+      - "3306:3306" # external access for DataGrip / DBeaver
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # The init scripts run on a temporary server without TCP; this only succeeds once the real server is up
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  api:
+    build: ./api
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: fleetmaster
+      DB_USER: api_user_account
+      DB_PASSWORD: api_dev_password
+      TZ: Europe/Amsterdam
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  client:
+    build: ./client
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  db_data:
