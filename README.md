@@ -2,10 +2,11 @@
 
 # FleetMaster
 
-Data Processing final assignment, NHL Stenden 2026-2027.
+Data Processing Final Assignment, NHL Stenden 2026-2027.
 Group: Michael O. Boateng
-       Jenira huaisai
-       Oleh 
+       Jenira Huaisai
+       Oleh Haliuk
+       Herbert Dorothea
 
 FleetMaster lets transport companies manage vehicles, drivers and transport orders.
 Parts: **application** → **REST API** (Java, Spring Boot) → **MySQL database**.

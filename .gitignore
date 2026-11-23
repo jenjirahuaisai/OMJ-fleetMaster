@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Build output
 target/
 build/
@@ -48,3 +49,7 @@ $RECYCLE.BIN/
 
 # Local backups (see docs/backup-recovery.md)
 backups/
+=======
+.DS_Store
+**/.DS_Store
+>>>>>>> origin/main
