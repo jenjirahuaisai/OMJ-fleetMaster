@@ -19,6 +19,9 @@ services:
       # Binary logs for point-in-time recovery (see docs/backup-recovery.md)
       - --log-bin=mysql-bin
       - --binlog-expire-logs-seconds=604800
+      # Binary logging is on, so MySQL refuses CREATE TRIGGER/FUNCTION from accounts without SUPER.
+      # This lets flyway_migrator create our trigger (trg_order_completed) without root rights.
+      - --log-bin-trust-function-creators=1
     ports:
       - "3306:3306" # external access for DataGrip / DBeaver
     volumes:
@@ -41,6 +44,8 @@ services:
       DB_NAME: fleetmaster
       DB_USER: api_user_account
       DB_PASSWORD: api_dev_password
+      FLYWAY_USER: flyway_migrator
+      FLYWAY_PASSWORD: flyway_dev_password
       TZ: Europe/Amsterdam
     ports:
       - "8080:8080"

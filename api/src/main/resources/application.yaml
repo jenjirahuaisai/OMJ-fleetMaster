@@ -8,6 +8,13 @@ spring:
     username: ${DB_USER:api_user_account}
     password: ${DB_PASSWORD:api_dev_password}
 
+  flyway:
+    # Flyway runs at startup with its own account (DDL rights); the API itself uses api_user_account.
+    # Without its own url, Flyway reuses spring.datasource.url with these credentials.
+    user: ${FLYWAY_USER:flyway_migrator}
+    password: ${FLYWAY_PASSWORD:flyway_dev_password}
+    locations: classpath:db/migration
+
   jpa:
     # The API account has no DDL rights: the schema comes from database/init/*.sql
     hibernate:
