@@ -1,0 +1,6 @@
+# Test-only settings, merged on top of src/main/resources/application.yaml.
+spring:
+  flyway:
+    # Tests must build and run without MySQL (examiner's laptop, CI pipeline).
+    # Tests that really need the database will later use Testcontainers.
+    enabled: false
