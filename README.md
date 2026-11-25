@@ -13,19 +13,19 @@ Parts: **application** → **REST API** (Java, Spring Boot) → **MySQL database
 
 ## Quick start
 
-Requirements: Docker with Compose v2, and free ports 3306, 8080 and <app port>.
+Requirements: Docker with Compose v2, and free ports 3306, 8080 and 3000.
 
 ```bash
-git clone < git@github.com:jenjirahuaisai/OMJ-fleetMaster.git>
-cd fleetmaster
+git clone git@github.com:jenjirahuaisai/OMJ-fleetMaster.git
+cd OMJ-fleetMaster
 docker compose up --build
 ```
 
-Wait until the log shows `<ready message>`. Everything starts automatically, including the database with test data.
+Wait until the log shows `Started FleetmasterApiApplication`. The first build downloads dependencies and takes a few minutes. Everything starts automatically, including the database with test data.
 
 | Service | URL |
 |---|---|
-| Application | http://localhost:<app port> |
+| Application | http://localhost:3000 |
 | API | http://localhost:8080/api/v1 |
 | Swagger docs | http://localhost:8080/swagger-ui.html |
 | MySQL | localhost:3306, database `fleetmaster` |
@@ -50,7 +50,9 @@ Database (DBeaver or DataGrip):
 | `junior_user` | <...> | Junior |
 | `mid_user` | <...> | Mid-level |
 | `senior_user` | <...> | Senior |
-| `API_user_account` | <...> | API (views and procedures only) |
+| `api_user_account` | `api_dev_password` | API (views and procedures only) |
+| `flyway_migrator` | `flyway_dev_password` | Runs the Flyway migrations at API startup only (DDL rights on `fleetmaster`, nothing else) |
+| `root` | `root_dev_password` | Administrator (setup only, never used by the API) |
 
 ## Demo of the full use case
 
@@ -74,9 +76,14 @@ Database (DBeaver or DataGrip):
 
 ## Tests
 
+Requires JDK 21 (or run the tests inside Docker, see below).
+
 ```bash
-cd api && ./mvnw verify
+cd api && ./mvnw verify      # macOS / Linux
+cd api && mvnw.cmd verify    # Windows
 ```
+
+Without a local JDK: `docker run --rm -v "$PWD/api:/app" -w /app eclipse-temurin:21-jdk sh ./mvnw verify`
 
 Coverage report: `api/target/site/jacoco/index.html`
 
@@ -88,4 +95,6 @@ Coverage report: `api/target/site/jacoco/index.html`
 ## Troubleshooting
 
 - Port already in use: change it in `docker-compose.yml`.
-- The API fails on first start: MySQL needs about <n> seconds. Wait, or run `docker compose restart api`.
+- The API fails on first start: the API waits for the MySQL health check, which can take up to a minute on first start (init scripts). If it still fails, run `docker compose restart api`.
+- Schema changes: add a new Flyway migration in `api/src/main/resources/db/migration` (e.g. `V2__add_x.sql`). Never edit a migration that already ran: the API refuses to start with a checksum error. During development, `docker compose down -v` resets the database completely.
+- Database accounts are created by `database/init/02_roles_and_users.sql`, which only runs on an empty volume. After changing it, run `docker compose down -v`.

@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: fleetmaster-api
+
+  datasource:
+    # Defaults work for local development; docker-compose overrides DB_HOST with the service name (db)
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:fleetmaster}
+    username: ${DB_USER:api_user_account}
+    password: ${DB_PASSWORD:api_dev_password}
+
+  flyway:
+    # Flyway runs at startup with its own account (DDL rights); the API itself uses api_user_account.
+    # Without its own url, Flyway reuses spring.datasource.url with these credentials.
+    user: ${FLYWAY_USER:flyway_migrator}
+    password: ${FLYWAY_PASSWORD:flyway_dev_password}
+    locations: classpath:db/migration
+
+  jpa:
+    # The API account has no DDL rights: the schema comes from Flyway (db/migration)
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        # Lets the app (and the contextLoads test) start without the database being reachable yet
+        boot.allow_jdbc_metadata_access: false
+      # Without metadata access Hibernate cannot detect the server, so name it (picks MySQLDialect for 8.4)
+      jakarta.persistence.database-product-name: MySQL
+      jakarta.persistence.database-product-version: "8.4"
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
