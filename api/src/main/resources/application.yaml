@@ -16,7 +16,7 @@ spring:
     locations: classpath:db/migration
 
   jpa:
-    # The API account has no DDL rights: the schema comes from database/init/*.sql
+    # The API account has no DDL rights: the schema comes from Flyway (db/migration)
     hibernate:
       ddl-auto: none
     open-in-view: false
