@@ -51,6 +51,7 @@ Database (DBeaver or DataGrip):
 | `mid_user` | <...> | Mid-level |
 | `senior_user` | <...> | Senior |
 | `api_user_account` | `api_dev_password` | API (views and procedures only) |
+| `flyway_migrator` | `flyway_dev_password` | Runs the Flyway migrations at API startup only (DDL rights on `fleetmaster`, nothing else) |
 | `root` | `root_dev_password` | Administrator (setup only, never used by the API) |
 
 ## Demo of the full use case
@@ -95,4 +96,5 @@ Coverage report: `api/target/site/jacoco/index.html`
 
 - Port already in use: change it in `docker-compose.yml`.
 - The API fails on first start: the API waits for the MySQL health check, which can take up to a minute on first start (init scripts). If it still fails, run `docker compose restart api`.
-- Database changes in `database/init/` are not applied: the init scripts only run on an empty volume. Run `docker compose down -v` and start again.
+- Schema changes: add a new Flyway migration in `api/src/main/resources/db/migration` (e.g. `V2__add_x.sql`). Never edit a migration that already ran: the API refuses to start with a checksum error. During development, `docker compose down -v` resets the database completely.
+- Database accounts are created by `database/init/02_roles_and_users.sql`, which only runs on an empty volume. After changing it, run `docker compose down -v`.
