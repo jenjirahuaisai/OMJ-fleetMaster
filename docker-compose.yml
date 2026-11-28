@@ -23,13 +23,15 @@ services:
       # This lets flyway_migrator create our trigger (trg_order_completed) without root rights.
       - --log-bin-trust-function-creators=1
     ports:
-      - "3306:3306" # external access for DataGrip / DBeaver
+      # external access for DataGrip / DBeaver on localhost:3307.
+      # Host port 3307 (not 3306): the NHL Stenden Docker environment already uses 3306 (MariaDB).
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./database/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # The init scripts run on a temporary server without TCP; this only succeeds once the real server is up
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent" ]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -48,7 +50,9 @@ services:
       FLYWAY_PASSWORD: flyway_dev_password
       TZ: Europe/Amsterdam
     ports:
-      - "8080:8080"
+      # API and Swagger on localhost:8081.
+      # Host port 8081 (not 8080): the NHL Stenden Docker environment already uses 8080 (phpMyAdmin).
+      - "8081:8080"
     depends_on:
       db:
         condition: service_healthy

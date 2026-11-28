@@ -1,19 +1,25 @@
 # OMJ-fleetMaster
 
-# FleetMaster
+## FleetMaster
 
-Data Processing Final Assignment, NHL Stenden 2026-2027.
-Group: Michael O. Boateng
-       Jenira Huaisai
-       Oleh Haliuk
-       Herbert Dorothea
+Data Processing final assignment, NHL Stenden 2026-2027.
+
+| Member | Part |
+|---|---|
+| Michale O. Boateng | Accounts & Security (registration, login, JWT, roles) |
+| Jenjira Huaisai | Fleet (vehicles, maintenance) + shared API rules |
+| Herbert Dorothea | Orders & Routes + testing |
+| Oleh Haliuk | Licences & Billing + database |
 
 FleetMaster lets transport companies manage vehicles, drivers and transport orders.
-Parts: **application** → **REST API** (Java, Spring Boot) → **MySQL database**.
+Parts: **application** → **REST API** (Java 21, Spring Boot) → **MySQL 8.4 database**.
 
 ## Quick start
 
-Requirements: Docker with Compose v2, and free ports 3306, 8080 and 3000.
+Requirements: Docker with Compose v2, and free ports **3307, 8081 and 3000**.
+
+The host ports are deliberately not the defaults (3306 / 8080): the standard NHL Stenden
+Docker environment already uses those, so FleetMaster can run next to it.
 
 ```bash
 git clone git@github.com:jenjirahuaisai/OMJ-fleetMaster.git
@@ -21,14 +27,16 @@ cd OMJ-fleetMaster
 docker compose up --build
 ```
 
-Wait until the log shows `Started FleetmasterApiApplication`. The first build downloads dependencies and takes a few minutes. Everything starts automatically, including the database with test data.
+Wait until the log shows `Started FleetmasterApiApplication`. The first build downloads
+dependencies and takes a few minutes. Everything starts automatically, including the database
+with test data.
 
 | Service | URL |
 |---|---|
 | Application | http://localhost:3000 |
-| API | http://localhost:8080/api/v1 |
-| Swagger docs | http://localhost:8080/swagger-ui.html |
-| MySQL | localhost:3306, database `fleetmaster` |
+| API | http://localhost:8081/api/v1 |
+| Swagger docs | http://localhost:8081/swagger-ui.html |
+| MySQL (DataGrip / DBeaver) | `localhost:3307`, database `fleetmaster` |
 
 Stop: `docker compose down`. Reset all data: `docker compose down -v`.
 
@@ -43,21 +51,21 @@ Application (all passwords are test data):
 | Driver | <...> | <...> |
 | Warehouse employee | <...> | <...> |
 
-Database (DBeaver or DataGrip):
+Database (DBeaver or DataGrip, host `localhost`, port `3307`):
 
 | Account | Password | Role |
 |---|---|---|
-| `junior_user` | <...> | Junior |
-| `mid_user` | <...> | Mid-level |
-| `senior_user` | <...> | Senior |
-| `api_user_account` | `api_dev_password` | API (views and procedures only) |
+| `junior_user` | <...> | Junior: basic information only (companies, registered vehicles, simple order status) |
+| `mid_user` | <...> | Mid-level: limited changes to operational data (e.g. vehicle status), no financial data |
+| `senior_user` | <...> | Senior: all data, including licences, invoices and full history |
+| `api_user_account` | `api_dev_password` | API: only the rights the API needs (DML on non-sensitive tables; sensitive data via views and procedures; no DDL, no root) |
 | `flyway_migrator` | `flyway_dev_password` | Runs the Flyway migrations at API startup only (DDL rights on `fleetmaster`, nothing else) |
 | `root` | `root_dev_password` | Administrator (setup only, never used by the API) |
 
 ## Demo of the full use case
 
 1. Register a company and verify it (<where the email can be seen>).
-2. Planner: add a vehicle and a maintenance record, create an order.
+2. Planner: add a vehicle (type, load capacity, load types, year) and a maintenance record; check the current maintenance status. Create an order.
 3. Refrigerated order on a normal vehicle: expect a rejection.
 4. Driver: record departure, stopover and arrival. The order becomes completed.
 5. Administrator: view licence and invoices. An overdue invoice makes the account read-only.
@@ -73,6 +81,7 @@ Database (DBeaver or DataGrip):
 | Roles, rights and justification | `docs/permissions.md` |
 | Transactions, views, procedures, triggers | `docs/integrity.md` |
 | Backup and recovery | `docs/backup-recovery.md` |
+| API conventions for the team | `docs/CONVENTIONS.md` |
 
 ## Tests
 
@@ -94,7 +103,16 @@ Coverage report: `api/target/site/jacoco/index.html`
 
 ## Troubleshooting
 
-- Port already in use: change it in `docker-compose.yml`.
-- The API fails on first start: the API waits for the MySQL health check, which can take up to a minute on first start (init scripts). If it still fails, run `docker compose restart api`.
-- Schema changes: add a new Flyway migration in `api/src/main/resources/db/migration` (e.g. `V2__add_x.sql`). Never edit a migration that already ran: the API refuses to start with a checksum error. During development, `docker compose down -v` resets the database completely.
-- Database accounts are created by `database/init/02_roles_and_users.sql`, which only runs on an empty volume. After changing it, run `docker compose down -v`.
+- **Port already in use:** another program uses 3307, 8081 or 3000. Stop it, or change the left
+  (host) port in `docker-compose.yml`, e.g. `"3308:3306"`. Never change the right (container) port.
+- **The API fails on first start:** the API waits for the MySQL health check, which can take up to
+  a minute on first start (init scripts). If it still fails, run `docker compose restart api`.
+- **Schema changes:** add a new Flyway migration in `api/src/main/resources/db/migration`, using
+  your own number range: base V1–V99, Accounts V100–V199, Fleet V200–V299, Orders V300–V399,
+  Licences & Billing V400–V499 (e.g. `V201__fleet_test_data.sql`). Never edit a migration that
+  already ran: the API refuses to start with a checksum error. During development,
+  `docker compose down -v` resets the database completely.
+- **Database accounts** are created by `database/init/02_roles_and_users.sql`, which only runs on
+  an empty volume. After changing it, run `docker compose down -v`.
+- **DataGrip shows other tables:** you are probably connected to port 3306 (another MySQL/MariaDB,
+  e.g. the NHL Stenden environment). FleetMaster's database is on port **3307**.
